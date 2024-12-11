@@ -42,7 +42,12 @@ impl Direction {
 }
 
 // Simulate, returning the set of visited squares if there was no loop.
-fn simulate(row_size: usize, board: &[Vec<Square>], guard_start: (usize, usize), loop_checker: &mut [u8]) -> bool {
+fn simulate(
+    row_size: usize,
+    board: &[Vec<Square>],
+    guard_start: (usize, usize),
+    loop_checker: &mut [u8],
+) -> bool {
     let mut direction = Direction::Up;
     let ptr = loop_checker.as_mut_ptr();
     unsafe {
