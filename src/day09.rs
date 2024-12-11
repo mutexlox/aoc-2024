@@ -61,18 +61,18 @@ fn defrag_files_and_checksum(file_map: &[Range<usize>]) -> usize {
             let mut tmp_recon_idx = i;
             let mut free_space = file_map[tmp_file_idx].start
                 - std::cmp::max(file_map[tmp_file_idx - 1].end, tmp_recon_idx);
-            while reconstructed_map[tmp_recon_idx].is_some() {
-                free_space -= 1;
-                tmp_recon_idx += 1;
+            while let Some(file_idx) = reconstructed_map[tmp_recon_idx] {
+                free_space -= file_map[file_idx].end - file_map[file_idx].start;
+                tmp_recon_idx += file_map[file_idx].end - file_map[file_idx].start;
             }
             while free_space < space_need && tmp_file_idx < file_idx_hi {
                 tmp_recon_idx +=
                     free_space + (file_map[tmp_file_idx].end - file_map[tmp_file_idx].start);
                 tmp_file_idx += 1;
                 free_space = file_map[tmp_file_idx].start - file_map[tmp_file_idx - 1].end;
-                while reconstructed_map[tmp_recon_idx].is_some() {
-                    free_space -= 1;
-                    tmp_recon_idx += 1;
+                while let Some(file_idx) = reconstructed_map[tmp_recon_idx] {
+                    free_space -= file_map[file_idx].end - file_map[file_idx].start;
+                    tmp_recon_idx += file_map[file_idx].end - file_map[file_idx].start;
                 }
             }
             if free_space < space_need {
