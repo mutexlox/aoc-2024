@@ -42,23 +42,16 @@ impl Direction {
 }
 
 // Simulate, returning the set of visited squares if there was no loop.
-fn simulate(
-    board: &[Vec<Square>],
-    guard_start: (usize, usize),
-    loop_checker: &mut [Vec<[bool; 4]>],
-) -> bool {
+fn simulate(board: &[Vec<Square>], guard_start: (usize, usize), loop_checker: &mut [u8]) -> bool {
     let mut direction = Direction::Up;
-    for row in loop_checker.iter_mut() {
-        for c in row.iter_mut() {
-            *c = [false; 4];
-        }
-    }
+    loop_checker.iter_mut().for_each(|c| *c = 0);
+
     let (mut guard_i, mut guard_j) = guard_start;
     loop {
-        if loop_checker[guard_i][guard_j][direction as usize] {
+        if loop_checker[guard_i * board.len() + guard_j] & (1 << (direction as usize)) != 0 {
             return false;
         }
-        loop_checker[guard_i][guard_j][direction as usize] = true;
+        loop_checker[guard_i * board.len() + guard_j] |= 1 << (direction as usize);
         if let (Some(next_guard_i), Some(next_guard_j)) = (
             add_checked(guard_i, direction.to_tuple().0),
             add_checked(guard_j, direction.to_tuple().1),
@@ -89,21 +82,14 @@ fn simulate_and_count_positions(
     board: &[Vec<Square>],
     guard_start: (usize, usize),
 ) -> (usize, usize) {
-    let mut loop_checker: Vec<Vec<[bool; 4]>> = Vec::new();
-    for row in board.iter() {
-        let mut new_vec = Vec::new();
-        new_vec.resize_with(row.len(), || [false; 4]);
-        loop_checker.push(new_vec);
-    }
+    let mut loop_checker: Vec<u8> = vec![0; board.len() * board[0].len()];
 
     simulate(board, guard_start, &mut loop_checker);
 
     let mut visited = Vec::new();
-    for (i, row) in loop_checker.iter().enumerate() {
-        for (j, &s) in row.iter().enumerate() {
-            if s != [false; 4] {
-                visited.push((i, j));
-            }
+    for (i, &s) in loop_checker.iter().enumerate() {
+        if s != 0 {
+            visited.push((i / board.len(), i % board.len()));
         }
     }
 
