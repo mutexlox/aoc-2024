@@ -42,18 +42,21 @@ impl Direction {
 }
 
 // Simulate, returning the set of visited squares if there was no loop.
-fn simulate(board: &[Vec<Square>], guard_start: (usize, usize)) -> Option<Vec<(usize, usize)>> {
+fn simulate(
+    board: &[Vec<Square>],
+    guard_start: (usize, usize),
+    loop_checker: &mut [Vec<[bool; 4]>],
+) -> bool {
     let mut direction = Direction::Up;
-    let mut loop_checker: Vec<Vec<[bool; 4]>> = Vec::new();
-    for row in board.iter() {
-        let mut new_vec = Vec::new();
-        new_vec.resize_with(row.len(), || [false; 4]);
-        loop_checker.push(new_vec);
+    for row in loop_checker.iter_mut() {
+        for c in row.iter_mut() {
+            *c = [false; 4];
+        }
     }
     let (mut guard_i, mut guard_j) = guard_start;
     loop {
         if loop_checker[guard_i][guard_j][direction as usize] {
-            return None;
+            return false;
         }
         loop_checker[guard_i][guard_j][direction as usize] = true;
         if let (Some(next_guard_i), Some(next_guard_j)) = (
@@ -77,16 +80,7 @@ fn simulate(board: &[Vec<Square>], guard_start: (usize, usize)) -> Option<Vec<(u
         }
     }
 
-    let mut out = Vec::new();
-    for (i, row) in loop_checker.iter().enumerate() {
-        for (j, &s) in row.iter().enumerate() {
-            if s != [false; 4] {
-                out.push((i, j));
-            }
-        }
-    }
-
-    Some(out)
+    true
 }
 
 // Simulate, returning both the # positions visited in a successful run and the number of ways
@@ -95,13 +89,29 @@ fn simulate_and_count_positions(
     board: &[Vec<Square>],
     guard_start: (usize, usize),
 ) -> (usize, usize) {
-    let visited = simulate(board, guard_start).unwrap();
+    let mut loop_checker: Vec<Vec<[bool; 4]>> = Vec::new();
+    for row in board.iter() {
+        let mut new_vec = Vec::new();
+        new_vec.resize_with(row.len(), || [false; 4]);
+        loop_checker.push(new_vec);
+    }
+
+    simulate(board, guard_start, &mut loop_checker);
+
+    let mut visited = Vec::new();
+    for (i, row) in loop_checker.iter().enumerate() {
+        for (j, &s) in row.iter().enumerate() {
+            if s != [false; 4] {
+                visited.push((i, j));
+            }
+        }
+    }
 
     let mut modified_board = board.to_vec();
     let mut loop_count = 0;
     for &(i, j) in visited.iter() {
         modified_board[i][j] = Square::Full;
-        if simulate(&modified_board, guard_start).is_none() {
+        if !simulate(&modified_board, guard_start, &mut loop_checker) {
             loop_count += 1;
         }
         modified_board[i][j] = Square::Empty;
