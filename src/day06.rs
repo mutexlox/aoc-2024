@@ -52,10 +52,10 @@ fn simulate(board: &[Vec<Square>], guard_start: (usize, usize), loop_checker: &m
 
     let (mut guard_i, mut guard_j) = guard_start;
     loop {
-        if loop_checker[guard_i * board.len() + guard_j] & (1 << (direction as usize)) != 0 {
+        if loop_checker[guard_i * board[0].len() + guard_j] & (1 << (direction as usize)) != 0 {
             return false;
         }
-        loop_checker[guard_i * board.len() + guard_j] |= 1 << (direction as usize);
+        loop_checker[guard_i * board[0].len() + guard_j] |= 1 << (direction as usize);
         if let (Some(next_guard_i), Some(next_guard_j)) = (
             add_checked(guard_i, direction.to_tuple().0),
             add_checked(guard_j, direction.to_tuple().1),
@@ -93,7 +93,7 @@ fn simulate_and_count_positions(
     let mut visited = Vec::new();
     for (i, &s) in loop_checker.iter().enumerate() {
         if s != 0 {
-            visited.push((i / board.len(), i % board.len()));
+            visited.push((i / board[0].len(), i % board[0].len()));
         }
     }
 
