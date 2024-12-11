@@ -1,8 +1,5 @@
+use aoc_2024::util;
 use std::collections::HashMap;
-use std::env;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::path::Path;
 
 fn sort_and_count(lists: &mut [Vec<i64>]) -> u64 {
     for list in lists.iter_mut() {
@@ -24,13 +21,8 @@ fn similarity_score(lists: &mut [Vec<i64>]) -> i64 {
 }
 
 fn main() {
-    let arg = env::args().nth(1).expect("Need file to read");
-    let path = Path::new(&arg);
-    let file = File::open(path).unwrap_or_else(|_| panic!("could not open {}", path.display()));
-    let lines = BufReader::new(file).lines();
-
     let mut lists = [vec![], vec![]];
-    for line in lines.map_while(Result::ok) {
+    for line in util::get_lines().map_while(Result::ok) {
         for (i, part) in line.split_ascii_whitespace().enumerate() {
             lists[i].push(
                 part.parse::<i64>()
