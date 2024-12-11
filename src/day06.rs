@@ -44,7 +44,11 @@ impl Direction {
 // Simulate, returning the set of visited squares if there was no loop.
 fn simulate(board: &[Vec<Square>], guard_start: (usize, usize), loop_checker: &mut [u8]) -> bool {
     let mut direction = Direction::Up;
-    loop_checker.iter_mut().for_each(|c| *c = 0);
+    let ptr = loop_checker.as_mut_ptr();
+    unsafe {
+        // Safety: Writing only |len| bytes to a vector with |len| u8s
+        std::ptr::write_bytes(ptr, 0, loop_checker.len());
+    }
 
     let (mut guard_i, mut guard_j) = guard_start;
     loop {
