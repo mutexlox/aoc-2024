@@ -26,8 +26,10 @@ fn find_and_count_antinodes(map: &[Vec<Square>], repeated: bool) -> usize {
             for p2 in positions.iter().skip(i + 1) {
                 let x_diff = p2.0 as i64 - p1.0 as i64;
                 let y_diff = p2.1 as i64 - p1.1 as i64;
-                antinodes.insert(*p1);
-                antinodes.insert(*p2);
+                if repeated {
+                    antinodes.insert(*p1);
+                    antinodes.insert(*p2);
+                }
                 // check (p2.0 + x_diff, p2.1 + y_diff) and (p1.0 - x_diff, p1.1 - y_diff)
                 let mut near_p2 = (p2.0 as i64 + x_diff, p2.1 as i64 + y_diff);
                 while (0..map.len() as i64).contains(&near_p2.0)
