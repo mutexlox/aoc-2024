@@ -10,7 +10,7 @@ fn add_checked(x: usize, y: i32) -> Option<usize> {
     if y < 0 {
         x.checked_sub((-y) as usize)
     } else {
-        x.checked_add(y as usize)
+        Some(x + (y as usize))
     }
 }
 
