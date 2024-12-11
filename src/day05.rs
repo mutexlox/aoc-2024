@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 fn obeys_constraints(job: &[usize], rules: &HashMap<usize, HashSet<usize>>) -> bool {
     for (before, all_after) in rules.iter() {
         if let Some(idx) = job.iter().position(|x| x == before) {
-            if idx > 0 && job.iter().take(idx - 1).any(|s| all_after.contains(s)) {
+            if job.iter().take(idx).any(|s| all_after.contains(s)) {
                 return false;
             }
         }
