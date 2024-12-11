@@ -1,5 +1,4 @@
 use aoc_2024::util;
-use std::collections::HashSet;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Square {
@@ -15,22 +14,51 @@ fn add_checked(x: usize, y: i32) -> Option<usize> {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+enum Direction {
+    Up = 0,
+    Right,
+    Down,
+    Left,
+}
+
+impl Direction {
+    fn to_tuple(self) -> (i32, i32) {
+        match self {
+            Direction::Up => (-1, 0),
+            Direction::Right => (0, 1),
+            Direction::Down => (1, 0),
+            Direction::Left => (0, -1),
+        }
+    }
+    fn next(&self) -> Self {
+        match self {
+            Direction::Up => Direction::Right,
+            Direction::Right => Direction::Down,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
+        }
+    }
+}
+
 // Simulate, returning the set of visited squares if there was no loop.
-fn simulate(board: &[Vec<Square>], guard_start: (usize, usize)) -> Option<HashSet<(usize, usize)>> {
-    let mut visited = HashSet::new();
-    visited.insert(guard_start);
-    let mut direction = (-1, 0);
-    let mut loop_checker = HashSet::new();
+fn simulate(board: &[Vec<Square>], guard_start: (usize, usize)) -> Option<Vec<(usize, usize)>> {
+    let mut direction = Direction::Up;
+    let mut loop_checker: Vec<Vec<[bool; 4]>> = Vec::new();
+    for row in board.iter() {
+        let mut new_vec = Vec::new();
+        new_vec.resize_with(row.len(), || [false; 4]);
+        loop_checker.push(new_vec);
+    }
     let (mut guard_i, mut guard_j) = guard_start;
     loop {
-        let key = ((guard_i, guard_j), direction);
-        if loop_checker.contains(&key) {
+        if loop_checker[guard_i][guard_j][direction as usize] {
             return None;
         }
-        loop_checker.insert(key);
+        loop_checker[guard_i][guard_j][direction as usize] = true;
         if let (Some(next_guard_i), Some(next_guard_j)) = (
-            add_checked(guard_i, direction.0),
-            add_checked(guard_j, direction.1),
+            add_checked(guard_i, direction.to_tuple().0),
+            add_checked(guard_j, direction.to_tuple().1),
         ) {
             // break if we go out of bounds
             if next_guard_i >= board.len() || next_guard_j >= board[guard_i].len() {
@@ -39,17 +67,9 @@ fn simulate(board: &[Vec<Square>], guard_start: (usize, usize)) -> Option<HashSe
             // turn if needed
             if board[next_guard_i][next_guard_j] == Square::Full {
                 // Don't commit this; instead turn
-                // (-1, 0) -> (0, 1) -> (1, 0) -> (0, -1)
-                direction = match direction {
-                    (-1, 0) => (0, 1),
-                    (0, 1) => (1, 0),
-                    (1, 0) => (0, -1),
-                    (0, -1) => (-1, 0),
-                    _ => panic!("bad direction {:?}", direction),
-                };
+                direction = direction.next();
             } else {
                 (guard_i, guard_j) = (next_guard_i, next_guard_j);
-                visited.insert((guard_i, guard_j));
             }
         } else {
             // ... or if we go negative
@@ -57,7 +77,16 @@ fn simulate(board: &[Vec<Square>], guard_start: (usize, usize)) -> Option<HashSe
         }
     }
 
-    Some(visited)
+    let mut out = Vec::new();
+    for (i, row) in loop_checker.iter().enumerate() {
+        for (j, &s) in row.iter().enumerate() {
+            if s != [false; 4] {
+                out.push((i, j));
+            }
+        }
+    }
+
+    Some(out)
 }
 
 // Simulate, returning both the # positions visited in a successful run and the number of ways
