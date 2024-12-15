@@ -40,53 +40,6 @@ struct EquationSolution {
     y_step: i64,
 }
 
-// Find (x, y) such that x and y are valid for both a and b, if possible.
-// If there is no such x or y, return None, or otherwise return the list of valid options.
-fn find_intersection(a: &EquationSolution, b: &EquationSolution) -> Option<(i64, i64)> {
-    // (x, y) such that:
-    // x = a.start_x + m * a.x_step
-    // y = a.start_y + m * a.y_step
-    // x = b.start_x + n * b.x_step
-    // y = b.start_y + n * b.y_step
-    // for 0 <= m <= a.max_steps
-    //     0 <= n <= b.max_steps
-    //
-    // a.start_x + m * a.x_step = b.start_x + n * b.x_step
-    // a.start_y + m * a.y_step = b.start_y + n * b.y_step
-    //
-    // a.start_x + m * a.x_step - b.start_x - n * b.x_step = 0
-    // a.start_y + m * a.y_step - b.start_y - n * b.y_step = 0
-    //
-    // (a.start_x - b.start_x) + m * a.x_step - n * b.x_step = 0
-    // (a.start_y - b.start_y) + m * a.y_step - n * b.y_step = 0
-    let a1 = a.x_step;
-    let b1 = -b.x_step;
-    let c1 = a.start_x - b.start_x;
-    let a2 = a.y_step;
-    let b2 = -b.y_step;
-    let c2 = a.start_y - b.start_y;
-
-    // Avoid div by zero.
-    if a1 * b2 == a2 * b1 {
-        return None;
-    }
-
-    let denom = a1 * b2 - a2 * b1;
-    let m_num = b1 * c2 - b2 * c1;
-    let n_num = c1 * a2 - c2 * a1;
-    if m_num % denom != 0 || n_num % denom != 0 {
-        return None;
-    }
-    let (m, n) = (m_num / denom, n_num / denom);
-    if !(0..=a.max_steps).contains(&m) {
-        return None;
-    }
-    if !(0..=b.max_steps).contains(&n) {
-        return None;
-    }
-    Some((a.start_x + m * a.x_step, a.start_y + m * a.y_step))
-}
-
 // Tries to solve for x and y such that a * x + b * y = target. See EquationSolution struct
 // for more docs.
 fn solve_equation(a: u64, b: u64, target: u64) -> Option<EquationSolution> {
@@ -134,7 +87,54 @@ fn solve_equation(a: u64, b: u64, target: u64) -> Option<EquationSolution> {
     })
 }
 
-fn min_tokens_required_large_offset(case: &Case, offset: u64) -> Option<u64> {
+// Find (x, y) such that x and y are valid for both a and b, if possible.
+// If there is no such x or y, return None.
+fn find_intersection(a: &EquationSolution, b: &EquationSolution) -> Option<(i64, i64)> {
+    // (x, y) such that:
+    // x = a.start_x + m * a.x_step
+    // y = a.start_y + m * a.y_step
+    // x = b.start_x + n * b.x_step
+    // y = b.start_y + n * b.y_step
+    // for 0 <= m <= a.max_steps
+    //     0 <= n <= b.max_steps
+    //
+    // a.start_x + m * a.x_step = b.start_x + n * b.x_step
+    // a.start_y + m * a.y_step = b.start_y + n * b.y_step
+    //
+    // a.start_x + m * a.x_step - b.start_x - n * b.x_step = 0
+    // a.start_y + m * a.y_step - b.start_y - n * b.y_step = 0
+    //
+    // (a.start_x - b.start_x) + m * a.x_step - n * b.x_step = 0
+    // (a.start_y - b.start_y) + m * a.y_step - n * b.y_step = 0
+    let a1 = a.x_step;
+    let b1 = -b.x_step;
+    let c1 = a.start_x - b.start_x;
+    let a2 = a.y_step;
+    let b2 = -b.y_step;
+    let c2 = a.start_y - b.start_y;
+
+    // Avoid div by zero.
+    if a1 * b2 == a2 * b1 {
+        return None;
+    }
+
+    let denom = a1 * b2 - a2 * b1;
+    let m_num = b1 * c2 - b2 * c1;
+    let n_num = c1 * a2 - c2 * a1;
+    if m_num % denom != 0 || n_num % denom != 0 {
+        return None;
+    }
+    let (m, n) = (m_num / denom, n_num / denom);
+    if !(0..=a.max_steps).contains(&m) {
+        return None;
+    }
+    if !(0..=b.max_steps).contains(&n) {
+        return None;
+    }
+    Some((a.start_x + m * a.x_step, a.start_y + m * a.y_step))
+}
+
+fn min_tokens_required_offset(case: &Case, offset: u64) -> Option<u64> {
     let prize = Point {
         x: case.prize.x + offset,
         y: case.prize.y + offset,
@@ -159,7 +159,7 @@ fn min_tokens_required_large_offset(case: &Case, offset: u64) -> Option<u64> {
 fn min_tokens_required(cases: &[Case], offset: u64) -> u64 {
     cases
         .iter()
-        .map(|c| min_tokens_required_large_offset(c, offset).unwrap_or(0))
+        .map(|c| min_tokens_required_offset(c, offset).unwrap_or(0))
         .sum()
 }
 
