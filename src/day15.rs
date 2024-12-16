@@ -61,33 +61,26 @@ fn run_step(
 
     let mut squares_to_check = HashSet::new();
     for &location in attempted_locations.iter() {
-        match grid[location.0][location.1] {
-            Square::Empty => {}
-            Square::Wall => {
+        match (grid[location.0][location.1], step) {
+            (Square::Empty, _) => {}
+            (Square::Wall, _) => {
                 // failed to move some so don't move any
                 return start_poses.to_vec();
             }
-            Square::Box => {
+            (Square::Box, _) => {
                 squares_to_check.insert(location);
             }
-            Square::BoxLeft => match step {
-                Step::Left | Step::Right => {
-                    squares_to_check.insert(location);
-                }
-                Step::Up | Step::Down => {
-                    squares_to_check.insert(location);
-                    squares_to_check.insert((location.0, location.1 + 1));
-                }
-            },
-            Square::BoxRight => match step {
-                Step::Left | Step::Right => {
-                    squares_to_check.insert(location);
-                }
-                Step::Up | Step::Down => {
-                    squares_to_check.insert((location.0, location.1 - 1));
-                    squares_to_check.insert(location);
-                }
-            },
+            (Square::BoxLeft | Square::BoxRight, Step::Left | Step::Right) => {
+                squares_to_check.insert(location);
+            }
+            (Square::BoxLeft, Step::Up | Step::Down) => {
+                squares_to_check.insert(location);
+                squares_to_check.insert((location.0, location.1 + 1));
+            }
+            (Square::BoxRight, Step::Up | Step::Down) => {
+                squares_to_check.insert((location.0, location.1 - 1));
+                squares_to_check.insert(location);
+            }
         }
     }
     if squares_to_check.is_empty() {
