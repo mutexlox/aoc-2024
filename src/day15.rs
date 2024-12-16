@@ -123,12 +123,9 @@ fn apply_steps_and_score(
         .map(|(i, row)| {
             row.iter()
                 .enumerate()
-                .map(|(j, &s)| {
-                    if matches!(s, Square::Box | Square::BoxLeft) {
-                        100 * i + j
-                    } else {
-                        0
-                    }
+                .map(|(j, &s)| match s {
+                    Square::Box | Square::BoxLeft => 100 * i + j,
+                    _ => 0,
                 })
                 .sum::<usize>()
         })
