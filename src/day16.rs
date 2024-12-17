@@ -1,7 +1,7 @@
 use aoc_2024::util;
 use keyed_priority_queue::KeyedPriorityQueue;
 use std::cmp::{Ord, Ordering};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Raw representation of the board as given.
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
@@ -172,9 +172,10 @@ impl PartialEq for MaxHeapEntry {
 
 impl Eq for MaxHeapEntry {}
 
-fn find_min_cost(graph: &ProcessedGraph) -> u64 {
+fn find_min_cost(graph: &ProcessedGraph) -> (u64, usize) {
     let mut heap = KeyedPriorityQueue::new();
     let mut best_dist = HashMap::new();
+    let mut prev = HashMap::new();
 
     heap.push(graph.root, MaxHeapEntry { cost: Some(0) });
     best_dist.insert(graph.root, 0);
@@ -197,11 +198,31 @@ fn find_min_cost(graph: &ProcessedGraph) -> u64 {
                 heap.set_priority(&neigh, MaxHeapEntry { cost: Some(alt) })
                     .unwrap();
                 best_dist.insert(neigh, alt);
+                prev.insert(neigh, vec![node]);
+            } else if best_dist.get(&neigh).is_some_and(|&x| x == alt) {
+                prev.get_mut(&neigh).unwrap().push(node);
+            }
+        }
+    }
+    let mut seen = HashSet::new();
+    let mut possible_path_nodes = HashSet::new();
+    possible_path_nodes.insert((graph.target.i, graph.target.j));
+    let mut nodes = VecDeque::new();
+    nodes.push_back(graph.target);
+    while let Some(n) = nodes.pop_front() {
+        if seen.contains(&n) {
+            continue;
+        }
+        seen.insert(n);
+        if let Some(prior) = prev.get(&n) {
+            for &p in prior.iter() {
+                nodes.push_back(p);
+                possible_path_nodes.insert((p.i, p.j));
             }
         }
     }
 
-    best_dist[&graph.target]
+    (best_dist[&graph.target], possible_path_nodes.len())
 }
 
 fn main() {
