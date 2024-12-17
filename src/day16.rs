@@ -1,4 +1,6 @@
 use aoc_2024::util;
+// Use KeyedPriorityQueue because, unlike std::collections::BinaryHeap, it supports priority
+// updates on arbitrary keys.
 use keyed_priority_queue::KeyedPriorityQueue;
 use std::cmp::{Ord, Ordering};
 use std::collections::{HashMap, HashSet, VecDeque};
