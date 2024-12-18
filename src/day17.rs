@@ -71,7 +71,7 @@ impl Program {
         for &code in self.code.iter().rev() {
             let mut new_options = HashSet::new();
 
-            for p in out.iter() {
+            for p in out.into_iter() {
                 for attempt in 0..8_u64 {
                     let mut reg_b = attempt;
                     reg_b ^= 2;
@@ -83,11 +83,9 @@ impl Program {
                     }
                 }
             }
+
             assert_ne!(new_options.len(), 0);
-
-            out.clear();
-
-            out.extend(new_options);
+            out = new_options;
         }
         *out.iter().min().unwrap()
     }
