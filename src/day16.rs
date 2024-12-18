@@ -1,4 +1,5 @@
 use aoc_2024::util;
+use aoc_2024::util::Direction;
 // Use KeyedPriorityQueue because, unlike std::collections::BinaryHeap, it supports priority
 // updates on arbitrary keys.
 use keyed_priority_queue::KeyedPriorityQueue;
@@ -12,38 +13,6 @@ enum RawSquare {
     Empty,
     Start,
     End,
-}
-
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-impl Direction {
-    fn neighbor(self, point: (usize, usize)) -> (usize, usize) {
-        match self {
-            Direction::Up => (point.0 - 1, point.1),
-            Direction::Down => (point.0 + 1, point.1),
-            Direction::Left => (point.0, point.1 - 1),
-            Direction::Right => (point.0, point.1 + 1),
-        }
-    }
-    fn immediate_neighbors(self) -> [Self; 2] {
-        match self {
-            Direction::Up | Direction::Down => [Direction::Left, Direction::Right],
-            Direction::Left | Direction::Right => [Direction::Up, Direction::Down],
-        }
-    }
-    fn directions() -> [Self; 4] {
-        [
-            Direction::Up,
-            Direction::Down,
-            Direction::Left,
-            Direction::Right,
-        ]
-    }
 }
 
 const TURN_COST: u64 = 1000;

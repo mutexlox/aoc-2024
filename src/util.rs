@@ -14,3 +14,35 @@ pub fn get_all_input() -> String {
     let arg = env::args().nth(1).expect("Need file to read");
     read_to_string(&arg).unwrap_or_else(|_| panic!("Could not read {}", arg))
 }
+
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+impl Direction {
+    pub fn neighbor(self, point: (usize, usize)) -> (usize, usize) {
+        match self {
+            Direction::Up => (point.0 - 1, point.1),
+            Direction::Down => (point.0 + 1, point.1),
+            Direction::Left => (point.0, point.1 - 1),
+            Direction::Right => (point.0, point.1 + 1),
+        }
+    }
+    pub fn immediate_neighbors(self) -> [Self; 2] {
+        match self {
+            Direction::Up | Direction::Down => [Direction::Left, Direction::Right],
+            Direction::Left | Direction::Right => [Direction::Up, Direction::Down],
+        }
+    }
+    pub fn directions() -> [Self; 4] {
+        [
+            Direction::Up,
+            Direction::Down,
+            Direction::Left,
+            Direction::Right,
+        ]
+    }
+}
