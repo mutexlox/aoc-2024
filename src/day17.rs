@@ -1,7 +1,7 @@
 use aoc_2024::util;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::fmt::Write;
+use std::collections::HashSet;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 enum OpCodes {
@@ -49,8 +49,51 @@ struct Program {
 }
 
 impl Program {
-    fn evaluate(&mut self) -> String {
-        let mut out = String::new();
+    fn evaluate_manual_decompilation(&mut self) -> Option<Vec<u8>> {
+        let mut out = Vec::new();
+
+        while self.reg_a != 0 {
+            let mut reg_b = self.reg_a & 7;
+            reg_b ^= 2;
+            let reg_c = self.reg_a >> reg_b;
+            self.reg_a /= 8;
+            reg_b ^= reg_c;
+            reg_b ^= 7;
+            out.push((reg_b & 7) as u8);
+        }
+        Some(out)
+    }
+
+    fn get_desired_a(&self) -> u64 {
+        // track possibilities in `out`
+        let mut out: HashSet<u64> = HashSet::new();
+        out.insert(0);
+        for &code in self.code.iter().rev() {
+            let mut new_options = HashSet::new();
+
+            for p in out.iter() {
+                for attempt in 0..8_u64 {
+                    let mut reg_b = attempt;
+                    reg_b ^= 2;
+                    let reg_c = (p * 8 + attempt) >> reg_b;
+                    reg_b ^= reg_c;
+                    reg_b ^= 7;
+                    if reg_b & 7 == code.into() {
+                        new_options.insert(p * 8 + attempt);
+                    }
+                }
+            }
+            assert_ne!(new_options.len(), 0);
+
+            out.clear();
+
+            out.extend(new_options);
+        }
+        *out.iter().min().unwrap()
+    }
+
+    fn evaluate(&mut self) -> Option<Vec<u8>> {
+        let mut out = Vec::new();
         while self.pc < self.code.len() {
             match self.code[self.pc].try_into().unwrap() {
                 OpCodes::Adv => self.reg_a /= 1 << self.combo_op(self.code[self.pc + 1]),
@@ -63,9 +106,7 @@ impl Program {
                     }
                 }
                 OpCodes::Bxc => self.reg_b ^= self.reg_c,
-                OpCodes::Out => {
-                    write!(out, "{},", self.combo_op(self.code[self.pc + 1]) & 7).unwrap()
-                }
+                OpCodes::Out => out.push((self.combo_op(self.code[self.pc + 1]) & 7) as u8),
                 OpCodes::Bdv => {
                     self.reg_b = self.reg_a / (1 << self.combo_op(self.code[self.pc + 1]))
                 }
@@ -75,9 +116,9 @@ impl Program {
             }
             self.pc += 2;
         }
-        out.pop();
-        out
+        Some(out)
     }
+
     fn combo_op(&self, operand: u8) -> u64 {
         match operand {
             x if (0..=3).contains(&x) => x.into(),
@@ -87,6 +128,24 @@ impl Program {
             7 => panic!("reserved"),
             _ => panic!("bad operand {}", operand),
         }
+    }
+
+    fn find_quine_input(&mut self) -> u64 {
+        let a = self.get_desired_a();
+        self.reg_a = a;
+        self.reg_b = 0;
+        self.reg_c = 0;
+        self.pc = 0;
+        let out = self.evaluate_manual_decompilation().unwrap();
+        println!(
+            "{}",
+            out.iter()
+                .map(|i| format!("{}", i))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        assert_eq!(out, self.code);
+        a
     }
 }
 
@@ -138,5 +197,26 @@ fn main() {
         reg_b,
         reg_c,
     };
-    println!("{}", program.evaluate());
+    let mut p = program.clone();
+    println!(
+        "{}",
+        program
+            .evaluate()
+            .unwrap()
+            .into_iter()
+            .map(|i| format!("{}", i))
+            .collect::<Vec<_>>()
+            .join(",")
+    );
+    println!(
+        "{}",
+        p.evaluate_manual_decompilation()
+            .unwrap()
+            .into_iter()
+            .map(|i| format!("{}", i))
+            .collect::<Vec<_>>()
+            .join(",")
+    );
+
+    println!("{:?}", program.find_quine_input());
 }
