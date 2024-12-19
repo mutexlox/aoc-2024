@@ -27,8 +27,7 @@ fn steps_to_end(points: &[(usize, usize)]) -> Option<usize> {
         }
         for new_location in Direction::directions()
             .iter()
-            .map(|d| d.neighbor(location))
-            .flatten()
+            .filter_map(|d| d.neighbor(location))
         {
             if new_location.0 < GRID_SIZE
                 && new_location.1 < GRID_SIZE
