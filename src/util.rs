@@ -23,12 +23,12 @@ pub enum Direction {
     Right,
 }
 impl Direction {
-    pub fn neighbor(self, point: (usize, usize)) -> (usize, usize) {
+    pub fn neighbor(self, point: (usize, usize)) -> Option<(usize, usize)> {
         match self {
-            Direction::Up => (point.0 - 1, point.1),
-            Direction::Down => (point.0 + 1, point.1),
-            Direction::Left => (point.0, point.1 - 1),
-            Direction::Right => (point.0, point.1 + 1),
+            Direction::Up => if point.0 == 0 { None } else { Some((point.0 - 1, point.1))},
+            Direction::Down => Some((point.0 + 1, point.1)),
+            Direction::Left => if point.1 == 0 { None } else { Some((point.0, point.1 - 1))},
+            Direction::Right => Some((point.0, point.1 + 1)),
         }
     }
     pub fn immediate_neighbors(self) -> [Self; 2] {
@@ -37,7 +37,7 @@ impl Direction {
             Direction::Left | Direction::Right => [Direction::Up, Direction::Down],
         }
     }
-    pub fn directions() -> [Self; 4] {
+    pub const fn directions() -> [Self; 4] {
         [
             Direction::Up,
             Direction::Down,

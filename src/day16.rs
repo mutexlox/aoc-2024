@@ -70,7 +70,7 @@ fn produce_graph(raw_board: &[Vec<RawSquare>]) -> ProcessedGraph {
                         for &n in d.immediate_neighbors().iter() {
                             neighbors.push((TURN_COST, ProcessedSquareKey { dir: n, i, j }));
                         }
-                        let (next_i, next_j) = d.neighbor((i, j));
+                        let (next_i, next_j) = d.neighbor((i, j)).unwrap();
                         if raw_board[next_i][next_j] != RawSquare::Wall {
                             neighbors.push((
                                 1,
