@@ -43,13 +43,18 @@ fn steps_to_end(points: &[(usize, usize)]) -> Option<usize> {
 }
 
 fn first_to_cut_off(points: &[(usize, usize)]) -> Option<(usize, usize)> {
-    // start at LINES_TO_READ + 1; we know that LINES_TO_READ is good.
-    for i in (LINES_TO_READ + 1)..points.len() {
-        if steps_to_end(&points[..i]).is_none() {
-            return Some(points[i - 1]);
+    // start at LINES_TO_READ; we know that up to there is good.
+    let mut lo = LINES_TO_READ;
+    let mut hi = points.len();
+    while lo < hi {
+        let mid = lo + (hi - lo) / 2;
+        if steps_to_end(&points[..mid + 1]).is_none() {
+            hi = mid;
+        } else {
+            lo = mid + 1;
         }
     }
-    None
+    Some(points[lo])
 }
 
 fn main() {
