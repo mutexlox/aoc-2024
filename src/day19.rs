@@ -35,9 +35,7 @@ fn main() {
     for line in util::get_lines().map_while(Result::ok) {
         if line.is_empty() {
             seen_empty = true;
-            continue;
-        }
-        if !seen_empty {
+        } else if !seen_empty {
             tokens = line.split(',').map(|s| s.trim().to_string()).collect();
         } else {
             words.push(line);
