@@ -82,11 +82,12 @@ fn count_cheats_at_least(
             if let Some(n) = d.neighbor(start) {
                 if n.0 < grid.len() && n.1 < grid[0].len() {
                     for (&dest, &cost) in helper(grid, cache, n, remaining - 1).iter() {
-                        if !s.contains_key(&dest) || s[&dest] > cost + 1 {
-                            s.insert(dest, cost + 1);
+                        let v = s.entry(dest).or_insert(cost + 1);
+                        if *v > cost + 1 {
+                            *v = cost + 1;
                         }
                     }
-                    if grid[n.0][n.1] != Square::Wall && (!s.contains_key(&n) || s[&n] > 1) {
+                    if grid[n.0][n.1] != Square::Wall {
                         s.insert(n, 1);
                     }
                 }
@@ -100,6 +101,9 @@ fn count_cheats_at_least(
         let mut out = 0;
         let mut cache = HashMap::new();
         for (&square, &orig_cost) in costs_from.iter() {
+            if costs_from[&(square.0, square.1)] <= min_savings {
+                continue;
+            }
             for (&dest, &cost) in helper(grid, &mut cache, square, skips_allowed).iter() {
                 if orig_cost >= costs_from[&(dest.0, dest.1)] + cost + min_savings {
                     out += 1;
