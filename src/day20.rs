@@ -75,7 +75,7 @@ fn count_cheats_at_least(
                         let cost = new_i.abs_diff(square.0) + new_j.abs_diff(square.1);
                         if cost <= skips_allowed
                             && new_i < grid.len()
-                            && new_j < grid.len()
+                            && new_j < grid[0].len()
                             && grid[new_i][new_j] != Square::Wall
                             && orig_cost >= costs_from[&(new_i, new_j)] + cost + min_savings
                         {
