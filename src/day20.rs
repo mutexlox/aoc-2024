@@ -10,9 +10,11 @@ enum Square {
     End,
 }
 
+type Point = (usize, usize);
+
 // Finds a path from start to end, returning its length and, for each (i, j) on the path, the
 // length of the path from that point.
-fn bfs(grid: &[Vec<Square>], start: (usize, usize)) -> Option<HashMap<(usize, usize), usize>> {
+fn bfs(grid: &[Vec<Square>], start: Point) -> Option<HashMap<Point, usize>> {
     let mut seen = HashMap::new();
     let mut queue = VecDeque::new();
     assert_eq!(grid[start.0][start.1], Square::Start);
@@ -54,47 +56,54 @@ fn bfs(grid: &[Vec<Square>], start: (usize, usize)) -> Option<HashMap<(usize, us
 
 fn count_cheats_at_least(
     min_savings: usize,
+    skips_allowed: usize,
     grid: &[Vec<Square>],
-    start: (usize, usize),
+    start: Point,
 ) -> Option<usize> {
+    // Given a start point and steps remaining, return all points reachable with noclip in that
+    // number of steps along with the minimum number of steps.
+    fn helper(
+        grid: &[Vec<Square>],
+        cache: &mut HashMap<(Point, usize), HashMap<Point, usize>>,
+        start: Point,
+        remaining: usize,
+    ) -> HashMap<Point, usize> {
+        if let Some(s) = cache.get(&(start, remaining)) {
+            return s.clone();
+        }
+        let mut s = HashMap::new();
+        if remaining == 0 {
+            if grid[start.0][start.1] != Square::Wall {
+                s.insert(start, 0);
+            }
+            return s;
+        }
+        for d in Direction::directions() {
+            if let Some(n) = d.neighbor(start) {
+                if n.0 < grid.len() && n.1 < grid[0].len() {
+                    for (&dest, &cost) in helper(grid, cache, n, remaining - 1).iter() {
+                        if !s.contains_key(&dest) || s[&dest] > cost + 1 {
+                            s.insert(dest, cost + 1);
+                        }
+                    }
+                    if grid[n.0][n.1] != Square::Wall && (!s.contains_key(&n) || s[&n] > 1) {
+                        s.insert(n, 1);
+                    }
+                }
+            }
+        }
+        cache.insert((start, remaining), s.clone());
+        s
+    }
+
     if let Some(costs_from) = bfs(grid, start) {
-        let mut out: usize = 0;
-        for (&square, &cost) in costs_from.iter() {
-            for d in Direction::directions() {
-                out += d
-                    .neighbor(square)
-                    .and_then(|s| {
-                        if s.0 < grid.len() && s.1 < grid[0].len() && grid[s.0][s.1] == Square::Wall
-                        {
-                            d.neighbor(s)
-                        } else {
-                            None
-                        }
-                    })
-                    .and_then(|point| costs_from.get(&point))
-                    .map(|c| c + min_savings + 2 <= cost)
-                    .is_some_and(|b| b) as usize;
-                out += d
-                    .neighbor(square)
-                    .and_then(|s| {
-                        if s.0 < grid.len() && s.1 < grid[0].len() && grid[s.0][s.1] == Square::Wall
-                        {
-                            d.neighbor(s)
-                        } else {
-                            None
-                        }
-                    })
-                    .and_then(|s| {
-                        if s.0 < grid.len() && s.1 < grid[0].len() && grid[s.0][s.1] == Square::Wall
-                        {
-                            d.neighbor(s)
-                        } else {
-                            None
-                        }
-                    })
-                    .and_then(|point| costs_from.get(&point))
-                    .map(|c| c + min_savings + 3 <= cost)
-                    .is_some_and(|b| b) as usize;
+        let mut out = 0;
+        let mut cache = HashMap::new();
+        for (&square, &orig_cost) in costs_from.iter() {
+            for (&dest, &cost) in helper(grid, &mut cache, square, skips_allowed).iter() {
+                if orig_cost >= costs_from[&(dest.0, dest.1)] + cost + min_savings {
+                    out += 1;
+                }
             }
         }
         Some(out)
@@ -122,5 +131,9 @@ fn main() {
         }
         grid.push(row);
     }
-    println!("{:?}", count_cheats_at_least(100, &grid, start.unwrap()));
+    println!("{:?}", count_cheats_at_least(100, 2, &grid, start.unwrap()));
+    println!(
+        "{:?}",
+        count_cheats_at_least(100, 20, &grid, start.unwrap())
+    );
 }
