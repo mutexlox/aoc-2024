@@ -66,8 +66,9 @@ fn count_cheats_at_least(
             if costs_from[&(square.0, square.1)] <= min_savings {
                 continue;
             }
-            for delta_i in -20i64..=20 {
-                for delta_j in -20i64..=20 {
+            let skips_i64 = skips_allowed as i64;
+            for delta_i in -skips_i64..=skips_i64 {
+                for delta_j in (delta_i.abs() - skips_i64)..=(skips_i64 - delta_i.abs()) {
                     if let (Ok(new_i), Ok(new_j)) = (
                         TryInto::<usize>::try_into(square.0 as i64 + delta_i),
                         TryInto::<usize>::try_into(square.1 as i64 + delta_j),
