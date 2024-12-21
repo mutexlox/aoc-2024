@@ -60,53 +60,28 @@ fn count_cheats_at_least(
     grid: &[Vec<Square>],
     start: Point,
 ) -> Option<usize> {
-    // Given a start point and steps remaining, return all points reachable with noclip in that
-    // number of steps along with the minimum number of steps.
-    fn helper(
-        grid: &[Vec<Square>],
-        cache: &mut HashMap<(Point, usize), HashMap<Point, usize>>,
-        start: Point,
-        remaining: usize,
-    ) -> HashMap<Point, usize> {
-        if let Some(s) = cache.get(&(start, remaining)) {
-            return s.clone();
-        }
-        let mut s = HashMap::new();
-        if remaining == 0 {
-            if grid[start.0][start.1] != Square::Wall {
-                s.insert(start, 0);
-            }
-            return s;
-        }
-        for d in Direction::directions() {
-            if let Some(n) = d.neighbor(start) {
-                if n.0 < grid.len() && n.1 < grid[0].len() {
-                    for (&dest, &cost) in helper(grid, cache, n, remaining - 1).iter() {
-                        let v = s.entry(dest).or_insert(cost + 1);
-                        if *v > cost + 1 {
-                            *v = cost + 1;
-                        }
-                    }
-                    if grid[n.0][n.1] != Square::Wall {
-                        s.insert(n, 1);
-                    }
-                }
-            }
-        }
-        cache.insert((start, remaining), s.clone());
-        s
-    }
-
     if let Some(costs_from) = bfs(grid, start) {
         let mut out = 0;
-        let mut cache = HashMap::new();
         for (&square, &orig_cost) in costs_from.iter() {
             if costs_from[&(square.0, square.1)] <= min_savings {
                 continue;
             }
-            for (&dest, &cost) in helper(grid, &mut cache, square, skips_allowed).iter() {
-                if orig_cost >= costs_from[&(dest.0, dest.1)] + cost + min_savings {
-                    out += 1;
+            for delta_i in -20i64..=20 {
+                for delta_j in -20i64..=20 {
+                    if let (Ok(new_i), Ok(new_j)) = (
+                        TryInto::<usize>::try_into(square.0 as i64 + delta_i),
+                        TryInto::<usize>::try_into(square.1 as i64 + delta_j),
+                    ) {
+                        let cost = new_i.abs_diff(square.0) + new_j.abs_diff(square.1);
+                        if cost <= skips_allowed
+                            && new_i < grid.len()
+                            && new_j < grid.len()
+                            && grid[new_i][new_j] != Square::Wall
+                            && orig_cost >= costs_from[&(new_i, new_j)] + cost + min_savings
+                        {
+                            out += 1;
+                        }
+                    }
                 }
             }
         }
