@@ -1,6 +1,7 @@
 use aoc_2024::util;
 use aoc_2024::util::Direction;
 use itertools::Itertools;
+use std::collections::HashMap;
 
 fn get_arrow_target(c: char, a_pos: (usize, usize)) -> (usize, usize) {
     /* +---+---+---+
@@ -43,6 +44,7 @@ fn compute_sequence(code: &str, indirections: usize) -> usize {
     // given a short code, e.g. instructions for one character of the input, find the length of the
     // shortest instructions to do it with `indirections` keypads in the way.
     fn expand(
+        cache: &mut HashMap<(String, usize), usize>,
         code: &str,
         indirections: usize,
         avoid: (usize, usize),
@@ -50,6 +52,9 @@ fn compute_sequence(code: &str, indirections: usize) -> usize {
     ) -> usize {
         if indirections == 0 {
             return code.len();
+        }
+        if let Some(&cost) = cache.get(&(code.to_string(), indirections)) {
+            return cost;
         }
         let mut total_len = 0;
         let mut pos = start;
@@ -91,6 +96,7 @@ fn compute_sequence(code: &str, indirections: usize) -> usize {
                     })
                     .collect::<String>();
                 let cost = expand(
+                    cache,
                     &(s.clone() + "A"),
                     indirections - 1,
                     /*avoid=*/ (0, 0),
@@ -105,16 +111,18 @@ fn compute_sequence(code: &str, indirections: usize) -> usize {
             //println!("...for {} ({}) at {} indirections, {} is best", code, c, indirections, min_len_s);
             total_len += min_len.unwrap();
         }
+        cache.insert((code.to_string(), indirections), total_len);
 
         total_len
     }
 
-    expand(code, indirections, (3, 0), (3, 2))
+    let mut cache = HashMap::new();
+    expand(&mut cache, code, indirections, (3, 0), (3, 2))
 }
 
-fn complexity(code: &str) -> usize {
+fn complexity(code: &str, indirections: usize) -> usize {
     let numeric_part = code.strip_suffix('A').unwrap().parse::<usize>().unwrap();
-    let sequence_len = compute_sequence(code, 3);
+    let sequence_len = compute_sequence(code, indirections);
     println!(
         "for {}, {} * {}\n=========================\n",
         code, numeric_part, sequence_len
@@ -122,11 +130,12 @@ fn complexity(code: &str) -> usize {
     numeric_part * sequence_len
 }
 
-fn sum_complexities(codes: &[String]) -> usize {
-    codes.iter().map(|s| complexity(s)).sum()
+fn sum_complexities(codes: &[String], indirections: usize) -> usize {
+    codes.iter().map(|s| complexity(s, indirections)).sum()
 }
 
 fn main() {
     let codes = util::get_lines().map_while(Result::ok).collect::<Vec<_>>();
-    println!("{}", sum_complexities(&codes));
+    println!("{}", sum_complexities(&codes, 3));
+    println!("{}", sum_complexities(&codes, 26));
 }
