@@ -96,7 +96,7 @@ fn compute_sequence(code: &str, indirections: usize) -> usize {
                     .collect::<String>();
                 let cost = expand(
                     cache,
-                    &(s.clone() + "A"),
+                    &(s + "A"),
                     indirections - 1,
                     /*avoid=*/ (0, 0),
                     /*start=*/ (0, 2),
