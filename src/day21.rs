@@ -1,6 +1,7 @@
 use aoc_2024::util;
 use aoc_2024::util::Direction;
 use itertools::Itertools;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 fn get_arrow_target(c: char, a_pos: (usize, usize)) -> (usize, usize) {
@@ -59,19 +60,18 @@ fn compute_sequence(code: &str, indirections: usize) -> usize {
         let mut total_len = 0;
         let mut pos = start;
         for c in code.chars() {
-            let mut moves = Vec::new();
-
             let target = get_arrow_target(c, start);
-            if target.1 > pos.1 {
-                moves.extend(vec![Direction::Right; target.1 - pos.1]);
-            } else if target.1 < pos.1 {
-                moves.extend(vec![Direction::Left; pos.1 - target.1]);
-            }
-            if target.0 > pos.0 {
-                moves.extend(vec![Direction::Down; target.0 - pos.0]);
-            } else if target.0 < pos.0 {
-                moves.extend(vec![Direction::Up; pos.0 - target.0]);
-            }
+
+            let mut moves = match target.1.cmp(&pos.1) {
+                Ordering::Greater => vec![Direction::Right; target.1 - pos.1],
+                Ordering::Less => vec![Direction::Left; pos.1 - target.1],
+                Ordering::Equal => vec![],
+            };
+            moves.extend(match target.0.cmp(&pos.0) {
+                Ordering::Greater => vec![Direction::Down; target.0 - pos.0],
+                Ordering::Less => vec![Direction::Up; pos.0 - target.0],
+                Ordering::Equal => vec![],
+            });
 
             let mut min_len = None;
             'moves: for m in moves.iter().permutations(moves.len()).unique() {
