@@ -74,7 +74,6 @@ fn compute_sequence(code: &str, indirections: usize) -> usize {
             }
 
             let mut min_len = None;
-            //let mut min_len_s = String::new();
             'moves: for m in moves.iter().permutations(moves.len()).unique() {
                 let mut cur = pos;
 
@@ -104,11 +103,9 @@ fn compute_sequence(code: &str, indirections: usize) -> usize {
                 );
                 if min_len.is_none_or(|len| len > cost) {
                     min_len = Some(cost);
-                    //min_len_s = s + "A";
                 }
             }
             pos = target;
-            //println!("...for {} ({}) at {} indirections, {} is best", code, c, indirections, min_len_s);
             total_len += min_len.unwrap();
         }
         cache.insert((code.to_string(), indirections), total_len);
@@ -123,10 +120,6 @@ fn compute_sequence(code: &str, indirections: usize) -> usize {
 fn complexity(code: &str, indirections: usize) -> usize {
     let numeric_part = code.strip_suffix('A').unwrap().parse::<usize>().unwrap();
     let sequence_len = compute_sequence(code, indirections);
-    println!(
-        "for {}, {} * {}\n=========================\n",
-        code, numeric_part, sequence_len
-    );
     numeric_part * sequence_len
 }
 
