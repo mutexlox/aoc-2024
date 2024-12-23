@@ -19,6 +19,7 @@ fn hash_key(arr: [i64; 4]) -> i64 {
 fn run_steps(map: &mut HashMap<i64, i64>, mut x: i64, steps: usize) -> i64 {
     let mut last_n = VecDeque::new();
     let mut map_local = HashMap::new();
+    map_local.reserve(2_000);
     for _ in 0..steps {
         let next = prng_step(x);
         if last_n.len() == 4 {
