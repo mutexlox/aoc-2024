@@ -49,9 +49,8 @@ fn find_largest_maximal_clique(graph: &HashMap<String, HashSet<String>>) -> Hash
 
 // Count all fully-connected subgraphs of size 3 where at least one member starts with
 // `prefix`.
-fn size_3_cliques(graph: &HashMap<String, HashSet<String>>, prefix: char) -> HashSet<[String; 3]> {
+fn size_3_cliques(graph: &HashMap<String, HashSet<String>>, prefix: char) -> usize {
     let mut components = HashSet::new();
-    let mut nodes_in_components = HashMap::new();
     for (u, neighbors) in graph.iter() {
         if !u.starts_with(prefix) {
             continue;
@@ -60,39 +59,13 @@ fn size_3_cliques(graph: &HashMap<String, HashSet<String>>, prefix: char) -> Has
             let inter = graph[v].intersection(neighbors);
             for w in inter {
                 let mut s = [u.clone(), v.clone(), w.clone()];
-                nodes_in_components
-                    .entry(u.clone())
-                    .or_insert_with(HashSet::new)
-                    .insert(v.clone());
-                nodes_in_components
-                    .entry(u.clone())
-                    .or_insert_with(HashSet::new)
-                    .insert(w.clone());
-
-                nodes_in_components
-                    .entry(v.clone())
-                    .or_insert_with(HashSet::new)
-                    .insert(u.clone());
-                nodes_in_components
-                    .entry(v.clone())
-                    .or_insert_with(HashSet::new)
-                    .insert(w.clone());
-
-                nodes_in_components
-                    .entry(w.clone())
-                    .or_insert_with(HashSet::new)
-                    .insert(u.clone());
-                nodes_in_components
-                    .entry(w.clone())
-                    .or_insert_with(HashSet::new)
-                    .insert(v.clone());
                 s.sort();
                 components.insert(s);
             }
         }
     }
 
-    components
+    components.len()
 }
 
 fn main() {
@@ -108,8 +81,7 @@ fn main() {
             .insert(v.clone());
         graph.entry(v).or_insert_with(HashSet::new).insert(u);
     }
-    let cliques = size_3_cliques(&graph, 't');
-    println!("{}", cliques.len());
+    println!("{}", size_3_cliques(&graph, 't'));
     let largest = find_largest_maximal_clique(&graph);
     let mut v = largest.iter().cloned().collect::<Vec<_>>();
     v.sort();
