@@ -10,11 +10,18 @@ fn find_largest_maximal_clique(graph: &HashMap<String, HashSet<String>>) -> Hash
         x: &mut HashSet<String>,
         out: &mut Option<HashSet<String>>,
     ) {
-        if p.is_empty() && x.is_empty() && out.as_ref().is_none_or(|o| o.len() < r.len()) {
-            *out = Some(r.clone());
+        if p.is_empty() && x.is_empty() {
+            if out.as_ref().is_none_or(|o| o.len() < r.len()) {
+                *out = Some(r.clone());
+            }
             return;
         }
-        while let Some(v) = p.iter().next().cloned() {
+        let (_, pivot) = p
+            .union(x)
+            .map(|v| (graph[v].len(), v.to_string()))
+            .max()
+            .unwrap();
+        while let Some(v) = p.difference(&graph[&pivot]).next().cloned() {
             r.insert(v.to_string());
             bron_kerbosch(
                 graph,
