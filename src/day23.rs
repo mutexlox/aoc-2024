@@ -2,7 +2,7 @@ use aoc_2024::util;
 use std::collections::{HashMap, HashSet};
 
 fn find_largest_maximal_clique(graph: &HashMap<String, HashSet<String>>) -> HashSet<String> {
-    // Based on "BronKerbosch1" on https://en.wikipedia.org/wiki/Bron%E2%80%93Kerbosch_algorithm
+    // Based on "BronKerbosch2" on https://en.wikipedia.org/wiki/Bron%E2%80%93Kerbosch_algorithm
     fn bron_kerbosch(
         graph: &HashMap<String, HashSet<String>>,
         r: &mut HashSet<String>,
