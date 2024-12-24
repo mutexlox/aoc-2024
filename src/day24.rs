@@ -40,7 +40,9 @@ fn evaluate(
         }
     }
     let mut values = inputs.clone();
-    let mut z_outs = HashMap::new();
+
+    let mut res = 0;
+
     for out in sorted.iter() {
         if let Some(gate) = gates.get(out) {
             let lhs = values[&gate.lhs];
@@ -52,17 +54,11 @@ fn evaluate(
             };
             values.insert(gate.out.clone(), val);
             if let Some(rest) = gate.out.strip_prefix('z') {
-                z_outs.insert(rest.parse::<u32>().unwrap(), val);
+                if val {
+                    res |= 1 << rest.parse::<u32>().unwrap();
+                }
             }
         }
-    }
-    let mut res = 0;
-    let mut i = 0;
-    while let Some(&val) = z_outs.get(&i) {
-        if val {
-            res |= 1 << i;
-        }
-        i += 1;
     }
     res
 }
@@ -71,6 +67,10 @@ fn main() {
     let mut inputs = HashMap::new();
     let mut gates = Vec::new();
     let mut seen_empty = false;
+
+    let mut x_val: u64 = 0;
+    let mut y_val: u64 = 0;
+
     static GATE_RE: Lazy<Regex> = Lazy::new(|| {
         Regex::new(r"(?<lhs>...) (?<op>OR|XOR|AND) (?<rhs>...) -> (?<out>...)").unwrap()
     });
@@ -82,6 +82,11 @@ fn main() {
         if !seen_empty {
             let mut parts = line.split(':');
             let name = parts.next().unwrap().to_string();
+            if let Some(rest) = name.strip_prefix('x') {
+                x_val |= 1 << rest.parse::<u32>().unwrap();
+            } else if let Some(rest) = name.strip_prefix('y') {
+                y_val |= 1 << rest.parse::<u32>().unwrap();
+            }
             let val = parts.next().unwrap().trim() == "1";
             inputs.insert(name, val);
         } else if let Some(caps) = GATE_RE.captures(&line) {
@@ -119,6 +124,8 @@ fn main() {
 
         gates_by_out.insert(gate.out.clone(), gate.clone());
     }
+
+    println!("{}, {}", x_val, y_val);
     println!(
         "{}",
         evaluate(&graph, &inputs, &gates_by_out, &reverse_graph)
