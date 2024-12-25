@@ -54,7 +54,7 @@ fn topo_sort(
 /// given a valid ordering of nodes, input values, and a mapping from output wires to gates,
 /// return the z value from running the gates
 fn evaluate(
-    sorted: &Vec<String>,
+    sorted: &[String],
     inputs: &HashMap<String, bool>,
     gates: &HashMap<String, Gate>,
 ) -> u64 {
@@ -86,8 +86,7 @@ fn evaluate(
 /// if we find that a wire for z23 is suspicious and one for z24 is suspicious, we should swap
 /// those rather than ones further apart.
 ///
-/// output format is a list like [[(a, b)], [(c,d),(c,f),(d,f)]] to indicate that a and b should
-/// definitely be swapped, and so should either c and d OR c and f OR d and f
+/// output format is a list of all potential swap 'sets'.
 fn get_possible_swaps(gates: &HashMap<String, Gate>) -> Vec<Vec<(String, String)>> {
     /*
      * for output zXX, 2 <= XX < 45
@@ -161,24 +160,26 @@ fn get_possible_swaps(gates: &HashMap<String, Gate>) -> Vec<Vec<(String, String)
                 .collect::<Vec<_>>(),
         );
     }
-    possible_swaps
+    let swap_sets = possible_swaps
+        .iter()
+        .map(|v| v.iter().cloned())
+        .multi_cartesian_product();
+    swap_sets.collect::<Vec<_>>()
 }
 
 /// Given a list of possible swaps, evaluate them all and find the first one that provides
 /// the sum of the given inputs.
 fn isolate_swaps(
-    possible: &Vec<Vec<(String, String)>>,
+    swap_sets: &[Vec<(String, String)>],
     graph: &HashMap<String, HashSet<String>>,
     inputs: &HashMap<String, bool>,
     reverse_graph: &HashMap<String, HashSet<String>>,
     gates: &HashMap<String, Gate>,
     in_x: u64,
     in_y: u64,
+    depth: usize,
 ) -> Option<Vec<(String, String)>> {
-    let swap_sets = possible
-        .iter()
-        .map(|v| v.iter().cloned())
-        .multi_cartesian_product();
+    let mut working = Vec::new();
     for swap_set in swap_sets {
         let mut modified_graph = graph.clone();
         let mut modified_rev = reverse_graph.clone();
@@ -212,18 +213,12 @@ fn isolate_swaps(
                 if !s.contains(&swap.1) {
                     s.remove(&swap.0);
                     s.insert(swap.1.clone());
-                    if g.lhs == "scw" {
-                        println!("removed {} and inserted {}", swap.0, swap.1);
-                    }
                 }
             }
             if let Some(s) = modified_graph.get_mut(&g.rhs) {
                 if !s.contains(&swap.1) {
                     s.remove(&swap.0);
                     s.insert(swap.1.clone());
-                    if g.rhs == "scw" {
-                        println!("removed {} and inserted {}", swap.0, swap.1);
-                    }
                 }
             }
 
@@ -232,29 +227,60 @@ fn isolate_swaps(
                 if !s.contains(&swap.0) {
                     s.remove(&swap.1);
                     s.insert(swap.0.clone());
-                    if g.lhs == "scw" {
-                        println!("removed {} and inserted {}", swap.1, swap.0);
-                    }
                 }
             }
             if let Some(s) = modified_graph.get_mut(&g.rhs) {
                 if !s.contains(&swap.0) {
                     s.remove(&swap.1);
                     s.insert(swap.0.clone());
-                    if g.rhs == "scw" {
-                        println!("removed {} and inserted {}", swap.1, swap.0);
-                    }
                 }
             }
         }
 
         if let Some(sorted) = topo_sort(&modified_graph, inputs, &modified_rev) {
             if evaluate(&sorted, inputs, &modified_gates) == in_x + in_y {
-                return Some(swap_set);
+                working.push(swap_set.clone());
             }
         }
     }
-    None
+    if !working.is_empty() {
+        if working.len() > 1 {
+            // Try different inputs
+            let mut new_inputs = inputs.clone();
+            let (new_x, new_y) = if depth == 0 {
+                for (k, v) in new_inputs.iter_mut() {
+                    if k.starts_with('x') {
+                        *v = !*v;
+                    }
+                }
+                let new_x = !in_x & ((1 << 45) - 1);
+                (new_x, in_y)
+            } else if depth == 1 {
+                for v in new_inputs.values_mut() {
+                    *v = !*v;
+                }
+                let new_x = !in_x & ((1 << 45) - 1);
+                let new_y = !in_y & ((1 << 45) - 1);
+                (new_x, new_y)
+            } else {
+                panic!("too deep");
+            };
+            isolate_swaps(
+                &working,
+                graph,
+                &new_inputs,
+                reverse_graph,
+                gates,
+                new_x,
+                new_y,
+                depth + 1,
+            )
+        } else {
+            Some(working[0].clone())
+        }
+    } else {
+        None
+    }
 }
 
 fn main() {
@@ -334,12 +360,12 @@ fn main() {
         &gates_by_out,
         x_val,
         y_val,
+        0,
     )
     .unwrap();
     let mut wire_list = pairs
         .iter()
-        .map(|p| vec![p.0.clone(), p.1.clone()])
-        .flatten()
+        .flat_map(|p| vec![p.0.clone(), p.1.clone()])
         .collect::<Vec<_>>();
     wire_list.sort();
     println!("{}", wire_list.join(","));
