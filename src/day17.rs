@@ -1,7 +1,7 @@
 use aoc_2024::util;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashSet;
+use std::sync::LazyLock;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 enum OpCodes {
@@ -149,8 +149,8 @@ impl Program {
 
 fn main() {
     let mut program = Vec::new();
-    static REGISTER_RE: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"Register (?<reg>A|B|C): (?<val>\d+)").unwrap());
+    static REGISTER_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"Register (?<reg>A|B|C): (?<val>\d+)").unwrap());
     let mut saw_blank_line = false;
     let mut reg_a = 0;
     let mut reg_b = 0;

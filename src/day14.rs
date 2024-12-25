@@ -1,8 +1,8 @@
 use aoc_2024::util;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use std::cmp::Ordering;
 use std::collections::HashSet;
+use std::sync::LazyLock;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 struct Point {
@@ -129,8 +129,9 @@ fn find_and_print_candidates(robots: &[Robot]) {
 }
 
 fn main() {
-    static ROBOT_RE: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"p=(?<px>\d+),(?<py>\d+) v=(?<vx>-?\d+),(?<vy>-?\d+)").unwrap());
+    static ROBOT_RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"p=(?<px>\d+),(?<py>\d+) v=(?<vx>-?\d+),(?<vy>-?\d+)").unwrap()
+    });
     let mut robots = Vec::new();
     for line in util::get_lines().map_while(Result::ok) {
         if let Some(caps) = ROBOT_RE.captures(&line) {

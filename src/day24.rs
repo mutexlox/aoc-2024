@@ -1,8 +1,8 @@
 use aoc_2024::util;
 use itertools::Itertools;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::LazyLock;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 enum Op {
@@ -302,7 +302,7 @@ fn main() {
     let mut x_val: u64 = 0;
     let mut y_val: u64 = 0;
 
-    static GATE_RE: Lazy<Regex> = Lazy::new(|| {
+    static GATE_RE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(?<lhs>...) (?<op>OR|XOR|AND) (?<rhs>...) -> (?<out>...)").unwrap()
     });
     for line in util::get_lines().map_while(Result::ok) {

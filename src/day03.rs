@@ -1,8 +1,8 @@
 use anyhow::Result;
 use aoc_2024::util;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use std::str::FromStr;
+use std::sync::LazyLock;
 use std::vec::Vec;
 
 #[derive(Debug)]
@@ -48,8 +48,9 @@ impl Computer {
 impl FromStr for Computer {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self> {
-        static RE: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"mul\((?<lhs>\d+),(?<rhs>\d+)\)|do\(\)|don't\(\)").unwrap());
+        static RE: LazyLock<Regex> = LazyLock::new(|| {
+            Regex::new(r"mul\((?<lhs>\d+),(?<rhs>\d+)\)|do\(\)|don't\(\)").unwrap()
+        });
         let mut out = Vec::new();
         for captures in RE.captures_iter(s) {
             let full = captures.get(0).unwrap().as_str();

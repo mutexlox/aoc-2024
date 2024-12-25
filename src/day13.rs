@@ -1,6 +1,6 @@
 use aoc_2024::util;
-use once_cell::sync::Lazy;
 use regex::Regex;
+use std::sync::LazyLock;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 struct Point {
@@ -164,10 +164,10 @@ fn min_tokens_required(cases: &[Case], offset: u64) -> u64 {
 }
 
 fn main() {
-    static BUTTON_RE: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"Button (?<butt>A|B): X\+(?<x>\d+), Y\+(?<y>\d+)").unwrap());
-    static PRIZE_RE: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"Prize: X=(?<x>\d+), Y=(?<y>\d+)").unwrap());
+    static BUTTON_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"Button (?<butt>A|B): X\+(?<x>\d+), Y\+(?<y>\d+)").unwrap());
+    static PRIZE_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"Prize: X=(?<x>\d+), Y=(?<y>\d+)").unwrap());
     let mut tmp_button_a = None;
     let mut tmp_button_b = None;
     let mut tmp_prize = None;
