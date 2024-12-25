@@ -19,21 +19,29 @@ struct Gate {
     out: String,
 }
 
+#[derive(Clone, Debug)]
+struct Graph {
+    graph: HashMap<String, HashSet<String>>,
+    inputs: HashMap<String, bool>,
+    reverse_graph: HashMap<String, HashSet<String>>,
+}
+
 /// topologically sort the given graph with given reverse edges and start nodes
 /// return None if there's a cycle, otherwise a correct order
-fn topo_sort(
-    graph: &HashMap<String, HashSet<String>>,
-    inputs: &HashMap<String, bool>,
-    reverse_graph: &HashMap<String, HashSet<String>>,
-) -> Option<Vec<String>> {
-    let mut graph = graph.clone();
-    let mut reverse_graph = reverse_graph.clone();
+fn topo_sort(graph: &Graph) -> Option<Vec<String>> {
+    let mut actual_graph = graph.graph.clone();
+    let mut reverse_graph = graph.reverse_graph.clone();
 
     let mut sorted = Vec::new();
-    let mut no_incoming = VecDeque::from_iter(inputs.keys().cloned());
+    let mut no_incoming = VecDeque::from_iter(graph.inputs.keys().cloned());
     while let Some(n) = no_incoming.pop_front() {
         sorted.push(n.clone());
-        for m in graph.get_mut(&n).map(|s| s.drain()).into_iter().flatten() {
+        for m in actual_graph
+            .get_mut(&n)
+            .map(|s| s.drain())
+            .into_iter()
+            .flatten()
+        {
             let s = reverse_graph.get_mut(&m).unwrap();
             s.remove(&n);
             if s.is_empty() {
@@ -42,7 +50,7 @@ fn topo_sort(
         }
     }
 
-    for neighs in graph.values() {
+    for neighs in actual_graph.values() {
         if !neighs.is_empty() {
             return None;
         }
@@ -171,9 +179,7 @@ fn get_possible_swaps(gates: &HashMap<String, Gate>) -> Vec<Vec<(String, String)
 /// the sum of the given inputs.
 fn isolate_swaps(
     swap_sets: &[Vec<(String, String)>],
-    graph: &HashMap<String, HashSet<String>>,
-    inputs: &HashMap<String, bool>,
-    reverse_graph: &HashMap<String, HashSet<String>>,
+    graph: &Graph,
     gates: &HashMap<String, Gate>,
     in_x: u64,
     in_y: u64,
@@ -182,7 +188,6 @@ fn isolate_swaps(
     let mut working = Vec::new();
     for swap_set in swap_sets {
         let mut modified_graph = graph.clone();
-        let mut modified_rev = reverse_graph.clone();
         let mut modified_gates = gates.clone();
 
         for swap in swap_set.iter() {
@@ -205,17 +210,21 @@ fn isolate_swaps(
                 },
             );
 
-            modified_rev.insert(swap.0.clone(), reverse_graph[&swap.1].clone());
-            modified_rev.insert(swap.1.clone(), reverse_graph[&swap.0].clone());
+            modified_graph
+                .reverse_graph
+                .insert(swap.0.clone(), graph.reverse_graph[&swap.1].clone());
+            modified_graph
+                .reverse_graph
+                .insert(swap.1.clone(), graph.reverse_graph[&swap.0].clone());
 
             let g = &gates[&swap.0];
-            if let Some(s) = modified_graph.get_mut(&g.lhs) {
+            if let Some(s) = modified_graph.graph.get_mut(&g.lhs) {
                 if !s.contains(&swap.1) {
                     s.remove(&swap.0);
                     s.insert(swap.1.clone());
                 }
             }
-            if let Some(s) = modified_graph.get_mut(&g.rhs) {
+            if let Some(s) = modified_graph.graph.get_mut(&g.rhs) {
                 if !s.contains(&swap.1) {
                     s.remove(&swap.0);
                     s.insert(swap.1.clone());
@@ -223,13 +232,13 @@ fn isolate_swaps(
             }
 
             let g = &gates[&swap.1];
-            if let Some(s) = modified_graph.get_mut(&g.lhs) {
+            if let Some(s) = modified_graph.graph.get_mut(&g.lhs) {
                 if !s.contains(&swap.0) {
                     s.remove(&swap.1);
                     s.insert(swap.0.clone());
                 }
             }
-            if let Some(s) = modified_graph.get_mut(&g.rhs) {
+            if let Some(s) = modified_graph.graph.get_mut(&g.rhs) {
                 if !s.contains(&swap.0) {
                     s.remove(&swap.1);
                     s.insert(swap.0.clone());
@@ -237,8 +246,8 @@ fn isolate_swaps(
             }
         }
 
-        if let Some(sorted) = topo_sort(&modified_graph, inputs, &modified_rev) {
-            if evaluate(&sorted, inputs, &modified_gates) == in_x + in_y {
+        if let Some(sorted) = topo_sort(&modified_graph) {
+            if evaluate(&sorted, &graph.inputs, &modified_gates) == in_x + in_y {
                 working.push(swap_set.clone());
             }
         }
@@ -246,7 +255,7 @@ fn isolate_swaps(
     if !working.is_empty() {
         if working.len() > 1 {
             // Try different inputs
-            let mut new_inputs = inputs.clone();
+            let mut new_inputs = graph.inputs.clone();
             let (new_x, new_y) = if depth == 0 {
                 for (k, v) in new_inputs.iter_mut() {
                     if k.starts_with('x') {
@@ -267,9 +276,11 @@ fn isolate_swaps(
             };
             isolate_swaps(
                 &working,
-                graph,
-                &new_inputs,
-                reverse_graph,
+                &Graph {
+                    graph: graph.graph.clone(),
+                    inputs: new_inputs,
+                    reverse_graph: graph.reverse_graph.clone(),
+                },
                 gates,
                 new_x,
                 new_y,
@@ -347,22 +358,17 @@ fn main() {
         gates_by_out.insert(gate.out.clone(), gate.clone());
     }
 
-    let sorted = topo_sort(&graph, &inputs, &reverse_graph).unwrap();
+    let g = Graph {
+        graph,
+        inputs: inputs.clone(),
+        reverse_graph,
+    };
+    let sorted = topo_sort(&g).unwrap();
     let actual = evaluate(&sorted, &inputs, &gates_by_out);
     println!("{}", actual);
 
     let swaps = get_possible_swaps(&gates_by_out);
-    let pairs = isolate_swaps(
-        &swaps,
-        &graph,
-        &inputs,
-        &reverse_graph,
-        &gates_by_out,
-        x_val,
-        y_val,
-        0,
-    )
-    .unwrap();
+    let pairs = isolate_swaps(&swaps, &g, &gates_by_out, x_val, y_val, 0).unwrap();
     let mut wire_list = pairs
         .iter()
         .flat_map(|p| vec![p.0.clone(), p.1.clone()])
