@@ -49,7 +49,7 @@ struct Program {
 }
 
 impl Program {
-    fn evaluate_manual_decompilation(&mut self) -> Option<Vec<u8>> {
+    fn evaluate_manual_decompilation(&mut self) -> Vec<u8> {
         let mut out = Vec::new();
 
         while self.reg_a != 0 {
@@ -61,7 +61,7 @@ impl Program {
             reg_b ^= 7;
             out.push((reg_b & 7) as u8);
         }
-        Some(out)
+        out
     }
 
     fn get_desired_a(&self) -> u64 {
@@ -90,7 +90,7 @@ impl Program {
         *out.iter().min().unwrap()
     }
 
-    fn evaluate(&mut self) -> Option<Vec<u8>> {
+    fn evaluate(&mut self) -> Vec<u8> {
         let mut out = Vec::new();
         while self.pc < self.code.len() {
             match self.code[self.pc].try_into().unwrap() {
@@ -114,7 +114,7 @@ impl Program {
             }
             self.pc += 2;
         }
-        Some(out)
+        out
     }
 
     fn combo_op(&self, operand: u8) -> u64 {
@@ -134,14 +134,7 @@ impl Program {
         self.reg_b = 0;
         self.reg_c = 0;
         self.pc = 0;
-        let out = self.evaluate_manual_decompilation().unwrap();
-        println!(
-            "{}",
-            out.iter()
-                .map(|i| format!("{}", i))
-                .collect::<Vec<_>>()
-                .join(",")
-        );
+        let out = self.evaluate_manual_decompilation();
         assert_eq!(out, self.code);
         a
     }
@@ -183,11 +176,6 @@ fn main() {
         }
     }
 
-    println!(
-        "program: {:?}, reg_a: {:?}, reg_b: {:?}, reg_c: {:?}",
-        program, reg_a, reg_b, reg_c
-    );
-
     let mut program = Program {
         code: program,
         pc: 0,
@@ -196,25 +184,15 @@ fn main() {
         reg_c,
     };
     let mut p = program.clone();
+    let out = program.evaluate();
     println!(
         "{}",
-        program
-            .evaluate()
-            .unwrap()
-            .into_iter()
+        out.iter()
             .map(|i| format!("{}", i))
             .collect::<Vec<_>>()
             .join(",")
     );
-    println!(
-        "{}",
-        p.evaluate_manual_decompilation()
-            .unwrap()
-            .into_iter()
-            .map(|i| format!("{}", i))
-            .collect::<Vec<_>>()
-            .join(",")
-    );
+    assert_eq!(p.evaluate_manual_decompilation(), out);
 
     println!("{:?}", program.find_quine_input());
 }
