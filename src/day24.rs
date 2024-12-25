@@ -19,6 +19,8 @@ struct Gate {
     out: String,
 }
 
+/// topologically sort the given graph with given reverse edges and start nodes
+/// return None if there's a cycle, otherwise a correct order
 fn topo_sort(
     graph: &HashMap<String, HashSet<String>>,
     inputs: &HashMap<String, bool>,
@@ -49,6 +51,8 @@ fn topo_sort(
     Some(sorted)
 }
 
+/// given a valid ordering of nodes, input values, and a mapping from output wires to gates,
+/// return the z value from running the gates
 fn evaluate(
     sorted: &Vec<String>,
     inputs: &HashMap<String, bool>,
@@ -78,6 +82,12 @@ fn evaluate(
     res
 }
 
+/// return a list of possible swaps, assuming that wiring swaps will be "local" -- that is,
+/// if we find that a wire for z23 is suspicious and one for z24 is suspicious, we should swap
+/// those rather than ones further apart.
+///
+/// output format is a list like [[(a, b)], [(c,d),(c,f),(d,f)]] to indicate that a and b should
+/// definitely be swapped, and so should either c and d OR c and f OR d and f
 fn get_possible_swaps(gates: &HashMap<String, Gate>) -> Vec<Vec<(String, String)>> {
     /*
      * for output zXX, 2 <= XX < 45
@@ -154,6 +164,8 @@ fn get_possible_swaps(gates: &HashMap<String, Gate>) -> Vec<Vec<(String, String)
     possible_swaps
 }
 
+/// Given a list of possible swaps, evaluate them all and find the first one that provides
+/// the sum of the given inputs.
 fn isolate_swaps(
     possible: &Vec<Vec<(String, String)>>,
     graph: &HashMap<String, HashSet<String>>,
