@@ -14,7 +14,7 @@ type Point = (usize, usize);
 
 // Finds a path from start to end, returning its length and, for each (i, j) on the path, the
 // length of the path from that point.
-fn bfs(grid: &[Vec<Square>], start: Point) -> Option<HashMap<Point, usize>> {
+fn bfs(grid: &[Vec<Square>], start: Point) -> Option<Vec<Vec<usize>>> {
     let mut seen = HashMap::new();
     let mut queue = VecDeque::new();
     assert_eq!(grid[start.0][start.1], Square::Start);
@@ -45,10 +45,15 @@ fn bfs(grid: &[Vec<Square>], start: Point) -> Option<HashMap<Point, usize>> {
     }
 
     if let Some(steps) = total_steps {
-        for (_, v) in seen.iter_mut() {
-            *v = steps - *v;
+        let mut out = vec![vec![usize::MAX; grid[0].len()]; grid.len()];
+        for (i, row) in out.iter_mut().enumerate() {
+            for (j, val_out) in row.iter_mut().enumerate() {
+                if let Some(val_in) = seen.get(&(i, j)) {
+                    *val_out = steps - *val_in;
+                }
+            }
         }
-        Some(seen)
+        Some(out)
     } else {
         None
     }
@@ -62,25 +67,27 @@ fn count_cheats_at_least(
 ) -> Option<usize> {
     if let Some(costs_from) = bfs(grid, start) {
         let mut out = 0;
-        for (&square, &orig_cost) in costs_from.iter() {
-            if costs_from[&(square.0, square.1)] <= min_savings {
-                continue;
-            }
-            let skips_i64 = skips_allowed as i64;
-            for delta_i in -skips_i64..=skips_i64 {
-                for delta_j in (delta_i.abs() - skips_i64)..=(skips_i64 - delta_i.abs()) {
-                    if let (Ok(new_i), Ok(new_j)) = (
-                        TryInto::<usize>::try_into(square.0 as i64 + delta_i),
-                        TryInto::<usize>::try_into(square.1 as i64 + delta_j),
-                    ) {
-                        let cost = new_i.abs_diff(square.0) + new_j.abs_diff(square.1);
-                        if cost <= skips_allowed
-                            && new_i < grid.len()
-                            && new_j < grid[0].len()
-                            && grid[new_i][new_j] != Square::Wall
-                            && orig_cost >= costs_from[&(new_i, new_j)] + cost + min_savings
-                        {
-                            out += 1;
+        for (i, row) in costs_from.iter().enumerate() {
+            for (j, &orig_cost) in row.iter().enumerate() {
+                if orig_cost <= min_savings || orig_cost == usize::MAX {
+                    continue;
+                }
+                let skips_i64 = skips_allowed as i64;
+                for delta_i in -skips_i64..=skips_i64 {
+                    for delta_j in (delta_i.abs() - skips_i64)..=(skips_i64 - delta_i.abs()) {
+                        if let (Ok(new_i), Ok(new_j)) = (
+                            TryInto::<usize>::try_into(i as i64 + delta_i),
+                            TryInto::<usize>::try_into(j as i64 + delta_j),
+                        ) {
+                            let cost = new_i.abs_diff(i) + new_j.abs_diff(j);
+                            if cost <= skips_allowed
+                                && new_i < grid.len()
+                                && new_j < grid[0].len()
+                                && grid[new_i][new_j] != Square::Wall
+                                && orig_cost >= costs_from[new_i][new_j] + cost + min_savings
+                            {
+                                out += 1;
+                            }
                         }
                     }
                 }
