@@ -59,24 +59,24 @@ fn score_after_secs(secs: i64, robots: &[Robot]) -> u64 {
 const LONG_LINE_LENGTH: i64 = 20;
 
 fn has_long_horizontal_line(points: &[Point]) -> bool {
-    let points: HashSet<Point> = HashSet::from_iter(points.iter().cloned());
+    let mut points_vec = vec![vec![false; GRID_X_SIZE as usize]; GRID_Y_SIZE as usize];
+    for point in points.iter() {
+        points_vec[point.y as usize][point.x as usize] = true;
+    }
+
     for point in points.iter() {
         let mut count = 1;
         for delta in 1..LONG_LINE_LENGTH {
-            if points.contains(&Point {
-                x: point.x + delta,
-                y: point.y,
-            }) {
+            if point.x + delta < GRID_X_SIZE
+                && points_vec[point.y as usize][(point.x + delta) as usize]
+            {
                 count += 1;
             } else {
                 break;
             }
         }
-        for delta in (-LONG_LINE_LENGTH..-1).rev() {
-            if points.contains(&Point {
-                x: point.x + delta,
-                y: point.y,
-            }) {
+        for delta in (1..LONG_LINE_LENGTH).rev() {
+            if point.x >= delta && points_vec[point.y as usize][(point.x - delta) as usize] {
                 count += 1;
             } else {
                 break;
