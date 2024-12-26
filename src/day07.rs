@@ -38,7 +38,7 @@ fn is_satisfiable_add_mul_concat(equation: &[i64]) -> bool {
             false
         } else {
             // Empty
-            return target == 0;
+            target == 0
         }
     }
     let target = equation[0];
