@@ -10,16 +10,16 @@ fn prng_step(x: i64) -> i64 {
 }
 
 // Assumes each element x is -9 <= x <= 9
-fn hash_key(arr: [i64; 4]) -> i64 {
+fn hash_key(arr: [i64; 4]) -> u32 {
     // range 0 - 18; 5 bits
-    (arr[0] + 9) | (arr[1] + 9) << 5 | (arr[2] + 9) << 10 | (arr[3] + 9) << 15
+    ((arr[0] + 9) | (arr[1] + 9) << 5 | (arr[2] + 9) << 10 | (arr[3] + 9) << 15) as u32
 }
 
 // map is a map of last 4 changes -> sum of what you can get
-fn run_steps(map: &mut HashMap<i64, i64>, mut x: i64, steps: usize) -> i64 {
+fn run_steps(map: &mut HashMap<u32, i64>, mut x: i64, steps: usize) -> i64 {
     let mut last_n = VecDeque::new();
     let mut map_local = HashMap::new();
-    map_local.reserve(2_000);
+    map_local.reserve(steps);
     for _ in 0..steps {
         let next = prng_step(x);
         if last_n.len() == 4 {
