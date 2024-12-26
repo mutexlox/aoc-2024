@@ -22,36 +22,28 @@ fn is_satisfiable_add_mul(equation: &[i64]) -> bool {
 }
 
 fn is_satisfiable_add_mul_concat(equation: &[i64]) -> bool {
-    let (target, rest) = (equation[0], &equation[1..]);
-    // Precompute logs and powers
-    let multipliers = rest
-        .iter()
-        .skip(1)
-        .map(|v| 10_i64.pow(v.ilog10() + 1))
-        .collect::<Vec<_>>();
-    for combination in 0..3_usize.pow((rest.len() - 1) as u32) {
-        let mut tmp = rest[0];
-        let mut combination = combination;
-        for (val, mul) in rest.iter().skip(1).zip(multipliers.iter()) {
-            if tmp > target {
-                break;
+    fn helper(target: i64, rest: &mut [i64]) -> bool {
+        if let Some(&next) = rest.last() {
+            let new_len = rest.len() - 1;
+            if target >= next && helper(target - next, &mut rest[..new_len]) {
+                return true;
             }
-            match combination % 3 {
-                0 => tmp *= val,
-                1 => tmp += val,
-                2 => {
-                    tmp *= mul;
-                    tmp += val;
-                }
-                _ => panic!("uh, math doesn't work"),
+            if target % next == 0 && helper(target / next, &mut rest[..new_len]) {
+                return true;
             }
-            combination /= 3;
-        }
-        if tmp == target {
-            return true;
+            let multiplier = 10_i64.pow(next.ilog10() + 1);
+            if target % multiplier == next && helper(target / multiplier, &mut rest[..new_len]) {
+                return true;
+            }
+            false
+        } else {
+            // Empty
+            return target == 0;
         }
     }
-    false
+    let target = equation[0];
+    let mut rest = equation[1..].to_vec();
+    helper(target, &mut rest)
 }
 
 fn sum_satisfiable_equations(equations: &[Vec<i64>], f: fn(&[i64]) -> bool) -> i64 {
