@@ -42,6 +42,11 @@ fn defrag_files_and_checksum(file_map: &[Range<usize>]) -> usize {
     let end = file_map.last().unwrap().end;
     reconstructed_map.resize(end + 1, None);
 
+    let mut free_list = Vec::new();
+    for (i, file) in file_map.iter().enumerate().skip(1) {
+        free_list.push(file_map[i - 1].end..file.start);
+    }
+
     let mut file_idx_lo = 0;
     let mut file_idx_hi = file_map.len() - 1;
     let mut i = 0;
@@ -57,30 +62,22 @@ fn defrag_files_and_checksum(file_map: &[Range<usize>]) -> usize {
             continue;
         } else {
             let space_need = file_map[file_idx_hi].end - file_map[file_idx_hi].start;
-            let mut tmp_file_idx = file_idx_lo;
-            let mut tmp_recon_idx = i;
-            let mut free_space = file_map[tmp_file_idx].start
-                - std::cmp::max(file_map[tmp_file_idx - 1].end, tmp_recon_idx);
-            while let Some(file_idx) = reconstructed_map[tmp_recon_idx] {
-                free_space -= file_map[file_idx].end - file_map[file_idx].start;
-                tmp_recon_idx += file_map[file_idx].end - file_map[file_idx].start;
-            }
-            while free_space < space_need && tmp_file_idx < file_idx_hi {
-                tmp_recon_idx +=
-                    free_space + (file_map[tmp_file_idx].end - file_map[tmp_file_idx].start);
-                tmp_file_idx += 1;
-                free_space = file_map[tmp_file_idx].start - file_map[tmp_file_idx - 1].end;
-                while let Some(file_idx) = reconstructed_map[tmp_recon_idx] {
-                    free_space -= file_map[file_idx].end - file_map[file_idx].start;
-                    tmp_recon_idx += file_map[file_idx].end - file_map[file_idx].start;
+            let mut tmp_recon_idx = if let Some(free_range_idx) =
+                free_list.iter().position(|r| r.end - r.start >= space_need)
+            {
+                let r = free_list[free_range_idx].clone();
+                if r.start < file_map[file_idx_hi].start {
+                    free_list[free_range_idx] = (r.start + space_need)..r.end;
+                    if r.start == i {
+                        i += space_need;
+                    }
+                    r.start
+                } else {
+                    file_map[file_idx_hi].start
                 }
-            }
-            if free_space < space_need {
-                tmp_recon_idx = file_map[file_idx_hi].start;
-            }
-            if i == tmp_recon_idx {
-                i += space_need;
-            }
+            } else {
+                file_map[file_idx_hi].start
+            };
             for _ in 0..space_need {
                 assert!(reconstructed_map[tmp_recon_idx].is_none());
                 reconstructed_map[tmp_recon_idx] = Some(file_idx_hi);
