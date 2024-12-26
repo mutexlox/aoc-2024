@@ -15,7 +15,3 @@ or first build and then run:
 $ cargo build
 $ targets/debug/dayXX inputs/dayXX.txt
 ```
-
-Mostly these will work for any input file, except for day 17, which involved a
-manual decompilation of part of the input, which is hard-coded into the
-solution.

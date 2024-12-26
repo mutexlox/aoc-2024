@@ -46,6 +46,7 @@ struct Program {
     reg_a: u64,
     reg_b: u64,
     reg_c: u64,
+    disable_jumps: bool,
 }
 
 impl Program {
@@ -64,21 +65,24 @@ impl Program {
         out
     }
 
-    fn get_desired_a(&self) -> u64 {
+    // Assumes that the program loops with one jnz at the end, processes 3 bits at a time and
+    // outputs a single 3-bit value based on reg_a per iteration
+    fn get_desired_a(&mut self) -> u64 {
         // track possibilities in `out`
         let mut out: HashSet<u64> = HashSet::new();
         out.insert(0);
-        for &code in self.code.iter().rev() {
+        self.disable_jumps = true;
+        for &code in self.clone().code.iter().rev() {
             let mut new_options = HashSet::new();
 
             for p in out.into_iter() {
                 for attempt in 0..8_u64 {
-                    let mut reg_b = attempt;
-                    reg_b ^= 2;
-                    let reg_c = (p * 8 + attempt) >> reg_b;
-                    reg_b ^= reg_c;
-                    reg_b ^= 7;
-                    if reg_b & 7 == code.into() {
+                    self.reg_a = p * 8 + attempt;
+                    self.pc = 0;
+                    self.reg_b = 0;
+                    self.reg_c = 0;
+                    let step_out = self.evaluate();
+                    if step_out[0] == code.into() {
                         new_options.insert(p * 8 + attempt);
                     }
                 }
@@ -87,6 +91,7 @@ impl Program {
             assert_ne!(new_options.len(), 0);
             out = new_options;
         }
+        self.disable_jumps = false;
         *out.iter().min().unwrap()
     }
 
@@ -98,7 +103,7 @@ impl Program {
                 OpCodes::Bxl => self.reg_b ^= self.code[self.pc + 1] as u64,
                 OpCodes::Bst => self.reg_b = self.combo_op(self.code[self.pc + 1]) & 7,
                 OpCodes::Jnz => {
-                    if self.reg_a != 0 {
+                    if self.reg_a != 0 && !self.disable_jumps {
                         self.pc = self.code[self.pc + 1].into();
                         continue;
                     }
@@ -182,6 +187,7 @@ fn main() {
         reg_a,
         reg_b,
         reg_c,
+        disable_jumps: false,
     };
     let mut p = program.clone();
     let out = program.evaluate();
