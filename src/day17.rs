@@ -82,7 +82,7 @@ impl Program {
                     self.reg_b = 0;
                     self.reg_c = 0;
                     let step_out = self.evaluate();
-                    if step_out[0] == code.into() {
+                    if step_out[0] == code {
                         new_options.insert(p * 8 + attempt);
                     }
                 }
